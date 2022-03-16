@@ -1,9 +1,7 @@
 import base64
-import json
 import re
 import sys
 import time
-from enum import Enum
 
 import PySide6
 import pandas as pd
