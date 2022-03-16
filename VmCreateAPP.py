@@ -2,6 +2,8 @@ import base64
 import re
 import sys
 import time
+from multiprocessing.dummy import Pool
+from multiprocessing.pool import ThreadPool
 
 import PySide6
 import pandas as pd
@@ -50,6 +52,7 @@ AviableRegion = {"CIDC-RP-25":['WXJD','SZJD'],"CIDC-RP-26":['DGJD'],"CIDC-RP-27"
 
 class createVM_window(QtWidgets.QMainWindow):
     def __init__(self):
+        self.pool = Pool(processes=4)
         QtWidgets.QMainWindow.__init__(self)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -330,64 +333,67 @@ class createVM_window(QtWidgets.QMainWindow):
             password = password.encode('utf8')
             crypto = rsa.encrypt(password, publickey)
             crypto = base64.encodebytes(crypto).decode('utf-8')
-
-
             for eachEndpoint in checkedbox:
-                client = VmCreateapiSample.create_client(ak, sk, self.rgnCheckboxdict[eachEndpoint])
-                request = VmCreateapiRequest()
-                vmcreate_body = VmCreateapiBody()
-                vmcreate_body.region = AviableRegion[self.rgnCheckboxdict[eachEndpoint]][0]
-                vmcreate_body.billing_type = billingType
-                vmcreate_body._vm_type = vmType
-                vmcreate_body.cpu = cpu
-                vmcreate_body.ram = ram
-                vmcreate_body.disk = disk
-                vmcreate_body.specs_name = specs
+                self.multiordertask(ak,sk,eachEndpoint,billingType,vmType,cpu,ram,disk,specs,boot_volume_size,volumeType,boot_volume,
+                 duration,quantity,crypto,image_name,vmName)
 
-                boot_volume.size = boot_volume_size
-                boot_volume.volume_type = volumeType
 
-                vmcreate_body.boot_volume = boot_volume
-                networks = VmCreateapiRequestNetworks()
-                vpc = Vpc()
-                networks.network_id = vpc.getNetworkId(ak, sk, self.rgnCheckboxdict[eachEndpoint])
-                #判断是否订购了Ip
-                #订购了Ip
-                if self.ui.isIpEnableCheckBox.checkState() == PySide6.QtCore.Qt.CheckState.Checked:
-                    # 弹性IP
-                    ip = VmCreateapiRequestIp()
-                    ip.ip_type = "MOBILE"
-                    vmcreate_body.ip = ip
-                    bandwith = VmCreateapiRequestBandwidth()
-                    # 按带宽计费。
-                    bandwithChargeMode = self.ui.bandwidthChargeModeComboBox.currentText()
-                    if bandwithChargeMode == "按带宽计费":
-                        bandwith.charge_mode = "bandwidthCharge"
-                    else :
-                        bandwith.charge_mode = "trafficCharge"
-                    bandwith.bandwidth_size = int(self.ui.bandwidthSizeSpinBox.value())
-                    vmcreate_body.bandwidth = bandwith
-                else:
-                    pass
+    def multiordertask(self,ak,sk,eachEndpoint,billingType,vmType,cpu,ram,disk,specs,boot_volume_size,volumeType,boot_volume,
+             duration,quantity,crypto,image_name,vmName):
+        client = VmCreateapiSample.create_client(ak, sk, self.rgnCheckboxdict[eachEndpoint])
+        request = VmCreateapiRequest()
+        vmcreate_body = VmCreateapiBody()
+        vmcreate_body.region = AviableRegion[self.rgnCheckboxdict[eachEndpoint]][0]
+        vmcreate_body.billing_type = billingType
+        vmcreate_body._vm_type = vmType
+        vmcreate_body.cpu = cpu
+        vmcreate_body.ram = ram
+        vmcreate_body.disk = disk
+        vmcreate_body.specs_name = specs
 
-                vmcreate_body.duration = duration
-                vmcreate_body.quantity = quantity
-                vmcreate_body._networks = networks
-                vmcreate_body.password = crypto
-                vmcreate_body.image_name = image_name
-                vmcreate_body.name = vmName
-                request.vm_create_body = vmcreate_body
-                try:
-                    data = client.vm_createapi(request)
-                    if data.body == None:
-                        print(data)
-                        self.showMsgIntextArea("----------%s节点订购失败。原因:%s" % (
-                                                                self.realnamedict[eachEndpoint], data.error_message))
-                except Exception as e:
-                    print("订购成功,生成了订单")
-                    self.showMsgIntextArea("----------%s节点订购成功。"% (self.realnamedict[eachEndpoint]))
-                    self.ui.orderbtn.setEnabled(False)
+        boot_volume.size = boot_volume_size
+        boot_volume.volume_type = volumeType
 
+        vmcreate_body.boot_volume = boot_volume
+        networks = VmCreateapiRequestNetworks()
+        vpc = Vpc()
+        networks.network_id = vpc.getNetworkId(ak, sk, self.rgnCheckboxdict[eachEndpoint])
+        # 判断是否订购了Ip
+        # 订购了Ip
+        if self.ui.isIpEnableCheckBox.checkState() == PySide6.QtCore.Qt.CheckState.Checked:
+            # 弹性IP
+            ip = VmCreateapiRequestIp()
+            ip.ip_type = "MOBILE"
+            vmcreate_body.ip = ip
+            bandwith = VmCreateapiRequestBandwidth()
+            # 按带宽计费。
+            bandwithChargeMode = self.ui.bandwidthChargeModeComboBox.currentText()
+            if bandwithChargeMode == "按带宽计费":
+                bandwith.charge_mode = "bandwidthCharge"
+            else:
+                bandwith.charge_mode = "trafficCharge"
+            bandwith.bandwidth_size = int(self.ui.bandwidthSizeSpinBox.value())
+            vmcreate_body.bandwidth = bandwith
+        else:
+            pass
+
+        vmcreate_body.duration = duration
+        vmcreate_body.quantity = quantity
+        vmcreate_body._networks = networks
+        vmcreate_body.password = crypto
+        vmcreate_body.image_name = image_name
+        vmcreate_body.name = vmName
+        request.vm_create_body = vmcreate_body
+        try:
+            data = client.vm_createapi(request)
+            if data.body == None:
+                print(data)
+                self.showMsgIntextArea("----------%s节点订购失败。原因:%s" % (
+                    self.realnamedict[eachEndpoint], data.error_message))
+        except Exception as e:
+            print("订购成功,生成了订单")
+            self.showMsgIntextArea("----------%s节点订购成功。" % (self.realnamedict[eachEndpoint]))
+            self.ui.orderbtn.setEnabled(False)
 
     def showMsgIntextArea(self,msg):
         self.ui.textEditArea.setMarkdown(self.ui.textEditArea.toMarkdown()+time.asctime(
@@ -405,42 +411,49 @@ class createVM_window(QtWidgets.QMainWindow):
             self.ui.textEditArea.setMarkdown(self.ui.textEditArea.toMarkdown() + "⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐")
             # queryPriceClient = VmqueryPriceSample
             # request = VmqueryPriceRequest
-            if self.ui.bootVolumeTypeComboBox.currentText() == "高性能型硬盘":
-                volumeType = "highPerformance"
-            else:
-                volumeType = "performanceOptimization"
-            if self.ui.billingTypeComboBox.currentText() == "按月支付（包月）":
-                billingType = "month"
-            elif self.ui.billingTypeComboBox.currentText() == "按年支付（包年）":
-                billingType = "year"
-            else:
-                billingType = "hour"
-            data = {
-                "productType":"vm",
-                "bootVolume":{
-                    "size":int(self.ui.bootVolumeSizeLineEdit.text()),
-                    "volumeType":volumeType
-                },
-                "specsName":self.ui.specsNameLineEdit.text().strip(),
-                "quantity":int(self.ui.quantitySpinBox.value()),
-                "duration":int(self.ui.durationSpinBox.value()),
-                "feeUnit":billingType
-            }
-            for checkedcity in checkedbox:
-                requesturl = RequestMsgByUrl(self.ui.acccesskeyLineEdit.text().strip(), self.ui.secretkeyLineEdit.text().strip(),'POST',
-                                             self.rgnCheckboxdict[checkedcity], "/api/v2/server/query/price", data)
-                res = requesturl.requestByUrl()
-                if res['body']!= None :
-                    price = float(res['body']['serverPrice'].replace(',',''))+float(res['body']['bootVolumePrice'].replace(',',''))
-                    self.showMsgIntextArea("----------%s节点该配置价格为 %.2f元(只包含云主机和硬盘价格)" % (
-                                                     self.realnamedict[checkedcity], price))
-
-                else:
-                    self.showMsgIntextArea("----------%s节点询价失败。原因:%s" % (
-                                                     self.realnamedict[checkedcity], res['errorMessage']))
+            # self.pool.map(self.multiquerypricetask,checkedbox)
+            self.multiquerypricetask(checkedbox)
             self.ui.textEditArea.setMarkdown(self.ui.textEditArea.toMarkdown() + "⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐")
             self.ui.queryPriceBtn.setEnabled(False)
 
+
+    def multiquerypricetask(self,checkedbox):
+        for checkedcity in checkedbox:
+            ak = self.ui.acccesskeyLineEdit.text().strip()
+            sk = self.ui.secretkeyLineEdit.text().strip()
+            client = VmCreateapiSample.create_client(ak, sk, self.rgnCheckboxdict[checkedcity])
+            request = VmqueryPriceRequest()
+            boot_volume = VmqueryPriceRequestBootVolume()
+            vmquery_price_body = VmqueryPriceBody()
+            vmquery_price_body.product_type = "vm"
+            if self.ui.bootVolumeTypeComboBox.currentText() == "高性能型硬盘":
+                boot_volume.volume_type = "highPerformance"
+            else:
+                boot_volume.volume_type = "performanceOptimization"
+            if self.ui.billingTypeComboBox.currentText() == "按月支付（包月）":
+                vmquery_price_body.fee_unit = "month"
+            elif self.ui.billingTypeComboBox.currentText() == "按年支付（包年）":
+                vmquery_price_body.fee_unit = "year"
+            else:
+                vmquery_price_body.fee_unit = "hour"
+            boot_volume.size = int(self.ui.bootVolumeSizeLineEdit.text())
+            vmquery_price_body.duration = int(self.ui.durationSpinBox.value())
+            vmquery_price_body.boot_volume = boot_volume
+            vmquery_price_body.quantity = int(self.ui.quantitySpinBox.value())
+            vmquery_price_body.specs_name = self.ui.specsNameLineEdit.text().strip()
+            request.vmquery_price_body = vmquery_price_body
+            print("%s节点开始询价" % (self.realnamedict[checkedcity]))
+            res = client.vmquery_price(request)
+            if res.body != None:
+                price = float(res.body.server_price) + float(
+                     res.body.boot_volume_price)
+                print("%s节点询价完毕"%(self.realnamedict[checkedcity]))
+                self.showMsgIntextArea("----------%s节点该配置价格为 %.2f元(只包含云主机和硬盘价格)" % (
+                     self.realnamedict[checkedcity], price))
+            else:
+                print("%s节点询价失败" % (self.realnamedict[checkedcity]))
+                self.showMsgIntextArea("----------%s节点询价失败。原因:%s" % (
+                      self.realnamedict[checkedcity], res.error_message))
     @Slot()
     def locKey(self):
         isakReadOnly =self.ui.acccesskeyLineEdit.isReadOnly()
