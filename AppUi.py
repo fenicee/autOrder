@@ -562,7 +562,7 @@ class Ui_MainWindow(object):
 
         self.textEditQueryVM = QTextEdit(self.formLayoutWidget_12)
         self.textEditQueryVM.setObjectName(u"textEditQueryVM")
-        self.textEditQueryVM.setEnabled(False)
+        self.textEditQueryVM.setEnabled(True)
 
         self.formLayout_13.setWidget(1, QFormLayout.FieldRole, self.textEditQueryVM)
 
@@ -660,12 +660,11 @@ class Ui_MainWindow(object):
 
         self.orderbtn.setText(QCoreApplication.translate("MainWindow", u"\u786e\u8ba4\u65e0\u8bef\uff0c\u4e00\u952e\u8ba2\u8d2d\uff01", None))
         self.orderCheckbtn.setText(QCoreApplication.translate("MainWindow", u"\u8ba2\u8d2d\u524d\u68c0\u67e5", None))
-        self.queryExistVmbtn.setText(QCoreApplication.translate("MainWindow", u"\u67e5\u8be2\u5df2\u8ba2\u8d2d\u7684\u4e91\u4e3b\u673a", None))
+        self.queryExistVmbtn.setText(QCoreApplication.translate("MainWindow", u"\u67e5\u8be2\u6240\u9009\u8282\u70b9\u5e76\u5bfc\u51fa\u6210excel", None))
         self.textEditQueryVM.setHtml(QCoreApplication.translate("MainWindow", u"<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
 "</style></head><body style=\" font-family:'Microsoft YaHei UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
-"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">\u8be5\u529f\u80fd\u6682\u672a\u5b9e\u73b0</p>\n"
 "<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p></body></html>", None))
     # retranslateUi
 

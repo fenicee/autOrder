@@ -143,7 +143,6 @@ class createVM_window(QtWidgets.QMainWindow):
                 vmresp_query.product_types = product_types
                 request.vmlist_server_ports_detail_resp_query = vmresp_query
                 res = client.vmlist_server_ports_detail_resp(request)
-                print(res)
                 if res.error_message != "" and res.body != None:
                     if res.body.total != 0:
                         for eachinfo in res.body.content:
@@ -168,9 +167,11 @@ class createVM_window(QtWidgets.QMainWindow):
                 dfData = pd.DataFrame(dfDataDict, index=None)
                 dfData.to_excel('%s以上节点的订购情况.xlsx'%(excelName),index=False)
                 QMessageBox.information(self, "消息","导出成功")
+
             else:
                 QMessageBox.warning(self,"提醒","所选节点并无云主机信息")
-
+                self.ui.textEditQueryVM.setMarkdown(self.ui.textEditArea.toMarkdown() + time.asctime(
+                    time.localtime(time.time())) + "%s以上节点云主机信息已导出，请查看当前目录文件下的excel表格"%(excelName))
     @Slot()
     def checkPassword(self):
         passwdLength = len(self.ui.ecspasswordLineEdit.text())
@@ -534,7 +535,7 @@ def main():
     app = QtWidgets.QApplication(sys.argv)
     widget = createVM_window()
     widget.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":
